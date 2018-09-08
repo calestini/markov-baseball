@@ -1,7 +1,9 @@
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import itertools
 import matplotlib.pyplot as plt
+from operator import itemgetter
 
 """
 There are 24 possible states in a baseball innning (25th being the 3rd out)
@@ -189,6 +191,18 @@ class markov():
     def __init__(self):
         self.data = None
         self.initalize_matrices()
+        self.batter_list = ['goldp001','donaj001','cruzn002','vottj001','davic003']
+        self.batting_line = [
+                ['goldp001', 'Paul GoldSchmidt'],
+                ['donaj001', 'Josh Donaldson'],
+                ['cruzn002', 'Nelson Cruz'],
+                ['cabrm001', 'Migruel Cabrera'],
+                ['vottj001', 'Joey Votto'],
+                ['mccua001', 'Andrew McCutchen'],
+                ['machm001', 'Manny Machado'],
+                ['heywj001', 'Jason Heyward'],
+                ['davic003', 'Chris Davis']
+        ]
 
     #T is a block matrix of A,B,C,D,E,F,0s,1s
     def initalize_matrices(self):
@@ -239,7 +253,7 @@ class markov():
         return padded
 
 
-    def transition(self, player_id):
+    def transition(self, player_id, precision = 2):
         """Transition matrix for the player
         """
         if self.data is None:
@@ -253,14 +267,22 @@ class markov():
         Tp = (pre_post_cnt / all_pre_cnt)
         Tp = self.pad(Tp, [24,28]) #correct shape for multiplication and broadcasting
 
-        return np.round(Tp,2)
+        return np.round(Tp,precision)
 
 
     def er(self, Tp=None):
         """Function to calculate expected run
         """
         Er = np.sum(self.runs*Tp , axis=1).reshape([3,8])
+        print (Er)
         return Er
+
+    def eo(self, Tp=None):
+        """Function to calculate expected run
+        """
+        Eo = np.sum(self.outs*Tp , axis=1).reshape([3,8])
+        print (Eo)
+        return Eo
 
 
     def plot(self, array, title):
@@ -276,7 +298,7 @@ class markov():
         if player_id:
             Tp = self.transition(player_id=player_id)
             self.plot(Tp, title=player_id)
-        else: Print ('No player id or dataset passed.')
+        else: print ('No player id or dataset passed.')
 
 
     def plot_er(self, player_id=None):
@@ -286,7 +308,103 @@ class markov():
             Tp = self.transition(player_id=player_id)
             Er = self.er(Tp)
             self.plot(Er, title=player_id)
-        else: Print ('No player id or dataset passed.')
+        else: print ('No player id or dataset passed.')
 
-    def move_state():
-        pass
+
+    def plot_eo(self, player_id=None):
+        """Plot expected run
+        """
+        if player_id:
+            Tp = self.transition(player_id=player_id)
+            Eo = self.eo(Tp)
+            self.plot(Eo, title=player_id)
+        else: print ('No player id or dataset passed.')
+
+
+    def batting_line_T(self, batter_list):
+        bT = []
+        for batter in batter_list:
+            bT.append(self.transition(player_id = batter, precision = 10))
+        return bT
+
+
+    def move_state(self, pre_state, Tp):
+
+        random_prob = np.random.uniform()
+        Tp_cum = np.cumsum(Tp, axis=1)
+        transition = Tp_cum[pre_state]
+        post_state = int(np.min(np.where(transition >= random_prob)))
+
+        return post_state
+
+
+    def simulate_games(self, batter_list=None, N = 10000, innings = 9):
+
+        if batter_list is None:
+            batter_list = self.batter_list
+
+        batting_line_T = self.batting_line_T(self.batter_list)
+
+        tot_runs = []
+        for n in range(N):
+
+            runs = 0
+            batting = 0
+
+            for i in range(0, innings, 1): #full game
+                pre_state = 0
+
+                while pre_state < 24:
+                    if batting > len(batting_line_T)-1: #allows for any number of batters, including one
+                        batting = 0
+                    post_state = self.move_state(pre_state, batting_line_T[batting])
+
+                    runs += self.runs[pre_state, post_state]
+                    pre_state = post_state
+
+                    batting += 1
+
+            tot_runs.append(runs)
+
+        return np.mean(tot_runs)
+        #sns.distplot((tot_runs))
+        #plt.title(np.mean(tot_runs))
+        #plt.show()
+
+
+    def optimize_N(self):
+        return
+
+
+    def optimize_batting(self, batter_list= None):
+        if batter_list is None:
+            batter_list = ['goldp001','donaj001','cruzn002','vottj001']
+
+        permutations = itertools.permutations(batter_list)
+        results = []
+        for loop, batter_list in enumerate(permutations):
+            print (loop)
+            avg_runs = self.simulate_games(batter_list, N=10)
+            results.append([batter_list, avg_runs])
+
+        results = sorted(results, key=itemgetter(-1), reverse=True)
+        plt.plot(np.array(results)[:,-1])
+        plt.show()
+        #print (results)
+        return results
+
+
+if __name__ == '__main__':
+    mk = markov()
+    #goldp001 - Paul GoldSchmidt
+    #donaj001 - Josh Donaldson
+    #cruzn002 - Nelson Cruz
+    #cabrm001 - Migruel Cabrera
+    #vottj001 - Joey Votto
+    #mccua001 - Andrew McCutchen
+    #machm001 - Manny Machado
+    #heywj001 - Jason Heyward
+    #davic003 - Chris Davis
+
+    #mk.simulate_games()
+    mk.optimize_batting()
