@@ -4,93 +4,8 @@ import seaborn as sns
 import itertools
 import matplotlib.pyplot as plt
 from operator import itemgetter
-
-"""
-There are 24 possible states in a baseball innning (25th being the 3rd out)
-8 combinations of the bases X 3 outs (0,1,2)
-As a matter of fact, we could consider 4 different out scenarios, based on the
-number of runs scored on a play (0,1,2,3), leaving us with 28states.
-
-#Notation
-
-24 states (state-space S):
-
-Runners:|None|1st|2nd|3rd|1&2|1&3|2&3|1,2,3|
-Outs
-0|#1|#2|#3|#4|#5|#6|#7|#8|
-1|#9|#10|#11|#12|#13|#14|#15|#16|
-2|#17|#18|#19|#20|#21|#22|#23|#24|
-
-
-3outs,0runs=#25
-3outs,1run=#26
-3outs,2runs=#27
-3outs,3runs=#28
-
-pij is the probability of moving from state i to state j. Therefore the
-transition matrix (stochastic matrix) of pij is:
-
-__
-|p1,1|p1,2|p1,3p1,28|
-|p2,1|p2,2|p2,3p2,28|
-T=|p3,1,|p3,2|p3,3p3,28|
-|()|()|()()|
-|p28,1|p28,2|p28,3p28,28|
-
-Tshape=(28,28)
-
-The matrix can also be read as a combination of from-to(pre-transition and
-post-transition) situations, where row-wise it has to add to 1 as it represents
-the same origin state and all end states.
-
-The matrix above can be represented as a block matrix:
-    __
-    |A0 B0 C0 D0|
-P = |0  A1 B1 E1|
-    |0  0  A2 F2|
-    |0  0  0  1 |
-
-Where A(8X8) is situation with no out, B(8X8) with one out, C(8X8)from zero to
-two, D(8X4), E(8X4) and F(8X4) to end the inning,0 matrices for impossible
-scenarios, and 1(4X4). The latter, specifically, is of the form:
-
-  |1000|
-1=|1000|
-  |1000|
-  |1000|
-
-The reason is so all outs end in state 25(absorbing state).
-
-
-Every transition brings one possible number of runs, so we can have a run matrix
-R(28X1) of all expected runs given original state i:
-
-    |R(1)=p1,1|
-    |R(2)=p2,2|
-R=  |()|
-    |R(4)=2*p4,1+p4,4+p4,7+p4,10+p4,2|
-    |()|
-    |R(28)=0|
-
-Rshape=(28,1)
-
-There as on why R(1)=p1,1 is because from no out and no runner(#1),a batter
-can only go back to the same situation to score a run. Anything else is not a
-run. Similarly for R(2) and R(3) as in those scenarios there is no one on base
-
-We can then keep track of the runs/state in the inning by using a matrix U of
-20-25rows(max of runs in the inning) X 28 columns(current state).
-
-
-Sources
-(1)http://wwwpankincom/markov/theoryhtm
-(2)https://wwwjstororg/stable/171922?seq=1#page_scan_tab_contents
-(3)https://enwikipediaorg/wiki/Stochastic_matrix#Definition_and_properties
-(4)http://statshackercom/the-markov-chain-model-of-baseball#prettyPhoto
-(5)https://enwikipediaorg/wiki/State_space
-(6)https://enwikipediaorg/wiki/Block_matrix
-"""
-
+import concurrent.futures
+import datetime
 
 RUNS=[
     [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
@@ -234,6 +149,7 @@ class markov():
 
         self.runs = runs
         self.outs = outs
+        self.prior = prior
 
         #return True
 
@@ -329,17 +245,43 @@ class markov():
 
 
     def move_state(self, pre_state, Tp):
-
+        post_state = None
         random_prob = np.random.uniform()
         Tp_cum = np.cumsum(Tp, axis=1)
         transition = Tp_cum[pre_state]
-        post_state = int(np.min(np.where(transition >= random_prob)))
+        while post_state is None:
+            try:
+                post_state = int(np.min(np.where(transition >= random_prob)))
+            except:
+                random_prob = np.random.uniform()
 
         return post_state
 
+    def play_game(self, T=None, innings=9, N =1000):
+        '''Game simulations for one T matrix
+        '''
+        if not T:
+            T = self.prior
+        tot_runs = []
+        for n in range(N):
+            runs = 0
+
+            for i in range(0, innings, 1): #full game
+                pre_state = 0
+
+                while pre_state < 24:
+
+                    post_state = self.move_state(pre_state, T)
+
+                    runs += self.runs[pre_state, post_state]
+                    pre_state = post_state
+
+            tot_runs.append(runs)
+        return np.mean(tot_runs)
 
     def simulate_games(self, batter_list=None, N = 10000, innings = 9):
-
+        """it runs random selection of states for innings
+        """
         if batter_list is None:
             batter_list = self.batter_list
 
@@ -371,25 +313,45 @@ class markov():
         #plt.title(np.mean(tot_runs))
         #plt.show()
 
-
-    def optimize_N(self):
-        return
-
-
-    def optimize_batting(self, batter_list= None):
+    def batter_permutations(self, batter_list = None):
+        """create all possible permutations of batters
+        """
         if batter_list is None:
-            batter_list = ['goldp001','donaj001','cruzn002','vottj001']
+            batter_list = ['goldp001','donaj001','cruzn002','vottj001','cabrm001','mccua001','machm001','heywj001','davic003']
 
         permutations = itertools.permutations(batter_list)
+        self.permutations = [i for i in permutations]
+
+        return [i for i in range(len(self.permutations))]
+
+
+    def optimize_batting(self, permutations):
+
         results = []
         for loop, batter_list in enumerate(permutations):
-            print (loop)
-            avg_runs = self.simulate_games(batter_list, N=10)
+            print (batter_list)
+            #print (loop)
+            avg_runs = self.simulate_games(batter_list=batter_list, N=2)
             results.append([batter_list, avg_runs])
 
-        results = sorted(results, key=itemgetter(-1), reverse=True)
-        plt.plot(np.array(results)[:,-1])
-        plt.show()
+        #results = sorted(results, key=itemgetter(-1), reverse=True)
+        #plt.plot(np.array(results)[:,-1])
+        #plt.show()
+        #print (results)
+        return results
+
+    def optimize_batting2(self, index):
+
+        #for index in indices:
+        batter_list = self.permutations[index]
+        #print (batter_list)
+        #print (loop)
+        avg_runs = self.simulate_games(batter_list=batter_list, N=10)
+        results = [batter_list, avg_runs]
+        print (index) if index % 10000 == 0 else None
+        #results = sorted(results, key=itemgetter(-1), reverse=True)
+        #plt.plot(np.array(results)[:,-1])
+        #plt.show()
         #print (results)
         return results
 
@@ -405,6 +367,27 @@ if __name__ == '__main__':
     #machm001 - Manny Machado
     #heywj001 - Jason Heyward
     #davic003 - Chris Davis
-
+    #print (mk.play_game())
     #mk.simulate_games()
-    mk.optimize_batting()
+
+    #using parallel code (max 10 cores)
+    max_cores_to_use = 10
+    chunksize = 10000
+
+    print ('Starting:\t', datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+
+    permutations_indices = mk.batter_permutations()
+    print (len(permutations_indices))
+    results = []
+    #for result in map(mk.optimize_batting2,permutations_indices):
+    #    results.append(result)
+
+
+    with concurrent.futures.ProcessPoolExecutor(max_workers=max_cores_to_use) as executor:
+        #for result in executor.map(mk.optimize_batting2, permutations_indices):
+        results = zip(executor.map(mk.optimize_batting2, permutations_indices))
+
+    #print (results)
+    print ('Finishing:\t', datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+    #plt.plot(np.array(results)[:,-1])
+    #plt.show()

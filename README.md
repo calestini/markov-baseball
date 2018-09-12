@@ -1,9 +1,11 @@
 # Markov Chain applied to baseball
 
-There are 24 possible states in a baseball innning (25th being the 3rd out)
-8 combinations of the bases X 3 outs (0,1,2)
-As a matter of fact, we could consider 4 different out scenarios, based on the
-number of runs scored on a play (0,1,2,3), leaving us with 28states.
+## Expected Runs
+
+
+## Batting Line Optimization
+
+If we denote the numbers of batters as n, then all possible combinations for a batting line are n! (or the permutations of n). For a 9 batters, we have a total possible combination of 362,880 for the batting line. This number encompasses all true possibilities with the assumption that position matters, not only the sequence.
 
 ## Notation
 ```python
@@ -79,7 +81,7 @@ We can then keep track of the runs/state in the inning by using a matrix U of
 ```
 
 Sources
-  - http://wwwpankincom/markov/theoryhtm
+  - [MARKOV CHAIN MODELS: THEORETICAL BACKGROUND](http://www.pankin.com/markov/theory.htm)
   - https://wwwjstororg/stable/171922?seq=1#page_scan_tab_contents
   - https://enwikipediaorg/wiki/Stochastic_matrix#Definition_and_properties
   - http://statshackercom/the-markov-chain-model-of-baseball#prettyPhoto
