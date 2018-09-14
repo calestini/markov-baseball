@@ -1,5 +1,10 @@
 # Markov Chain applied to baseball
 
+## Game Simulation
+
+It runs 9 innings using one or multiple batters transition matrices. It will run the transitions in the sequence of the list of batters that is passed (no limits applied).
+The code runs 9 loops (one per inning) of a while loop, generating random states from 0 --> 25-28.
+
 ## Expected Runs
 
 
@@ -7,7 +12,24 @@
 
 If we denote the numbers of batters as n, then all possible combinations for a batting line are n! (or the permutations of n). For a 9 batters, we have a total possible combination of 362,880 for the batting line. This number encompasses all true possibilities with the assumption that position matters, not only the sequence.
 
-## Notation
+With this, we can know the expected run given a sequence of batters, for the first inning.
+
+## Explanation
+
+There are 28 states in baseball innings:
+
+|Runners|None|1st|2nd|3rd|1&2|1&3|2&3|1,2,3|
+|:-:|:-:|:-:||:-:||:-:||:-:||:-:||:-:||:-:||:-:|
+|Outs|||||||||
+|0|#1|#2|#3|#4|#5|#6|#7|#8|
+|1|#9|#10|#11|#12|#13|#14|#15|#16|
+|2|#17|#18|#19|#20|#21|#22|#23|#24|
+
+- State 25: 3 out, 0 runs
+- State 26: 3 out, 1 run
+- State 27: 3 out, 2 runs
+- State 28: 3 out, 3 runs
+
 ```python
 '''
 24 states (state-space S):
@@ -81,7 +103,7 @@ We can then keep track of the runs/state in the inning by using a matrix U of
 ```
 
 Sources
-  - [MARKOV CHAIN MODELS: THEORETICAL BACKGROUND](http://www.pankin.com/markov/theory.htm)
+  - [Markov Chain Models: Theoretical Background](http://www.pankin.com/markov/theory.htm)
   - https://wwwjstororg/stable/171922?seq=1#page_scan_tab_contents
   - https://enwikipediaorg/wiki/Stochastic_matrix#Definition_and_properties
   - http://statshackercom/the-markov-chain-model-of-baseball#prettyPhoto

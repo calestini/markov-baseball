@@ -238,9 +238,13 @@ class markov():
 
 
     def batting_line_T(self, batter_list):
-        bT = []
-        for batter in batter_list:
-            bT.append(self.transition(player_id = batter, precision = 10))
+        """final results has 3D --> shape[N, 24, 24] where N is no of batters
+        """
+        bT = np.zeros([len(batter_list),24,24], dtype=float)
+        #bT = []
+        #bT[i].append(self.transition(player_id = batter, precision = 10)[:24,:24])
+        for i in range(len(batter_list)):
+            bT[i,:,:] = self.transition(player_id = batter_list[i], precision = 10)[:24,:24]
         return bT
 
 
@@ -313,12 +317,9 @@ class markov():
         #plt.title(np.mean(tot_runs))
         #plt.show()
 
-    def batter_permutations(self, batter_list = None):
+    def batter_permutations(self, batter_list = ['goldp001','donaj001','cruzn002','vottj001','cabrm001','mccua001','machm001','heywj001','davic003']):
         """create all possible permutations of batters
         """
-        if batter_list is None:
-            batter_list = ['goldp001','donaj001','cruzn002','vottj001','cabrm001','mccua001','machm001','heywj001','davic003']
-
         permutations = itertools.permutations(batter_list)
         self.permutations = [i for i in permutations]
 
@@ -342,10 +343,7 @@ class markov():
 
     def optimize_batting2(self, index):
 
-        #for index in indices:
         batter_list = self.permutations[index]
-        #print (batter_list)
-        #print (loop)
         avg_runs = self.simulate_games(batter_list=batter_list, N=10)
         results = [batter_list, avg_runs]
         print (index) if index % 10000 == 0 else None
@@ -355,23 +353,169 @@ class markov():
         #print (results)
         return results
 
+    def expected_run(self, Tp):
+        Er = np.sum(self.runs[:24,:24]*Tp , axis=1).reshape([24,1])
+        return Er
+
+
+    def rotate_batters(self, current_batter_list):
+        """rotate batters once, to the left"""
+        #next_batter_array = np.empty_like(current_batter_array)
+        next_batter_list = current_batter_list[1:]
+        next_batter_list.append(current_batter_list[0])
+        return next_batter_list
+
+
+    def inning(self, ER_matrix, batting_line, transitions, runs, batters_list):
+        '''#need to create a function to estimate probabilty of inning ending with batter 3,4,5...
+        ER_matrix has the Expected run matrix (24X1) for each batting line. Based on who starts, all we need is element 0 for that inning.
+        Therefore we need to know the probability of player x starting the inning in that base line and multiply by the ER where he starts.
+        in other words, expected run on inning2 is the sum of element-wise multiplication of ER[0] for each batter * P(batter), where P is
+        the probability that player will start the next inning (a function of the current inning line)
+
+        batting_line: list of 9 elements (1D)
+        '''
+        #expected run on second inning
+        batting_line = batting_line + batting_line + batting_line #27 players total to run in one inning before 3rd out
+
+        out_prob = np.zeros(shape=[len(batting_line),1])
+
+        ER_inning = np.zeros(shape=[len(batting_line),1])
+        runs_2nd = 0
+        new_batting_line = batting_line
+        current_U = transitions[batting_line[0]][0,:]
+
+        prob = 1-np.sum(transitions[batting_line[0]][0,:])
+        out_prob[0] = prob
+
+        batter_ix = next(i for i,v in enumerate(batters_list) if list(new_batting_line[0:9]) == v)
+        ER_inning[0] = ER_matrix[batter_ix][0]
+
+        for loop, batter in enumerate(batting_line):
+            if loop>0:
+                prob = 1-np.sum(np.dot(current_U, transitions[batter]))
+                current_U = np.dot(current_U, transitions[batter])
+                out_prob[loop] = prob - np.sum(out_prob[2:])
+                new_batting_line = self.rotate_batters(new_batting_line)
+
+            batter_ix = next(i for i,v in enumerate(batters_list) if list(new_batting_line[0:9]) == v)
+            ER_inning[loop] = ER_matrix[batter_ix][0]
+
+        print ('1st inning', ER_inning[0][0])
+        print ('2nd inning', np.sum(out_prob*ER_inning))
+        #print (out_prob, ER_inning)
+
+
+    def expected_run2(self, ER_matrix, Outs_matrix, batting_line, batters_list):
+        batters_out_prob = np.zeros([27,27])
+        batters_er_on_00 = np.zeros([27,27])
+
+        new_batting_line = batting_line
+        for rotation in range(27):
+            batters_ix = next(i for i,v in enumerate(batters_list) if list(new_batting_line[0:9]) == v)
+            batters_out_prob[rotation] = Outs_matrix[batters_ix]
+            batters_er_on_00[rotation][0] = ER_matrix[batters_ix][0]
+            new_batting_line = self.rotate_batters(new_batting_line)
+        batters_out_prob[:,:2] = 0.
+
+        x = list(batters_er_on_00[:,0])
+        #print (x)
+        for row in range(len(x)):
+            for column in range(len(x)):
+                batters_er_on_00[len(x)-1 - row][column] = x[column-row]
+
+        print (batters_out_prob)
+        print (batters_er_on_00)
+        return batters_out_prob, batters_er_on_00
+
+
+    def generate_er(self, batter_list=['goldp001','donaj001','cruzn002','vottj001','cabrm001','mccua001','machm001','heywj001','davic003']):
+
+        permutations = itertools.permutations(batter_list)
+        permutations_list = [i+i+i for i in permutations]
+
+        ER_matrix = np.zeros([len(permutations_list),24])
+        Outs_matrix = np.zeros([len(permutations_list),27]) #Out prob, starting from that batter
+
+        transitions = {}
+        runs = {}
+
+        for player in batter_list:#9 loops
+            transitions[player] = self.transition(player_id = player, precision = 10)[:24,:24]
+            runs[player] = np.sum(self.runs[:24,:24]*transitions[player], axis=1)
+
+        batters_list = []
+        for loop, batters in enumerate(permutations_list):
+            batters_list.append(list(batters[:9]))
+
+            T_list = np.zeros([len(batters),24,24])
+            Er_list = np.zeros([len(batters),24,1])
+
+            current_T = np.identity(24)
+
+            for i in range(len(batters)):
+
+                current_T = np.dot(current_T, transitions[batters[i]])
+                current_run = runs[batters[i]]
+
+                if i == 0:
+                    ER = np.dot(np.identity(24), current_run)
+                    current_U = transitions[batters[i]][0,:]
+                    prob = 1-np.sum(current_U)
+                    Outs_matrix[loop][i] = prob
+                else:
+                    ER += np.dot(current_T, current_run)
+                    prob = 1-np.sum(np.dot(current_U, transitions[batters[i]]))
+                    current_U = np.dot(current_U, transitions[batters[i]])
+                    Outs_matrix[loop][i] = prob - np.sum(Outs_matrix[loop][2:])
+
+            ER_matrix[loop] = ER.reshape([24,])
+            #TS_matrix[loop] = current_U.reshape([24,])
+
+        #print (Outs_matrix[0])
+        batting_line = batters_list[0]
+        #self.inning(ER_matrix, batting_line, transitions, runs, batters_list)
+        batters_out_prob, batters_er_on_00 = self.expected_run2(ER_matrix, Outs_matrix, batting_line+batting_line+batting_line, batters_list)
+        #for loop, batters in enumerate(batters_list):
+        #    if loop == 275:
+
+        #        batters2 = self.rotate_batters(batters)
+                # batters3 = self.rotate_batters(batters2)
+                # batters4 = self.rotate_batters(batters3)
+                # batters5 = self.rotate_batters(batters4)
+                # batters6 = self.rotate_batters(batters5)
+                # batters7 = self.rotate_batters(batters6)
+                # batters8 = self.rotate_batters(batters7)
+                # batters9 = self.rotate_batters(batters8)
+
+        #        batter_ix = next(i for i,v in enumerate(batters_list) if list(batters2) == v)
+        #        print (ER_matrix[batter_ix])
+                    #next(i for i,v in enumerate(l) if 12 in v)
+                #print (batters_array.all(batters, axis=0))
+        #plt.plot(ER_matrix[:,0])
+        #plt.show()
+        #print (np.max(ER_matrix[:,0]))
+        #max_index = np.argmax(ER_matrix[:,0])
+        #print (batters_list[max_index][:9])
+
+
+
+        return ER_matrix, batters_list, batters_out_prob, batters_er_on_00
+
+    def best_lineup(self, ER_matrix, batters_list):
+        print (np.max(ER_matrix[:,0]))
+
+
 
 if __name__ == '__main__':
     mk = markov()
-    #goldp001 - Paul GoldSchmidt
-    #donaj001 - Josh Donaldson
-    #cruzn002 - Nelson Cruz
-    #cabrm001 - Migruel Cabrera
-    #vottj001 - Joey Votto
-    #mccua001 - Andrew McCutchen
-    #machm001 - Manny Machado
-    #heywj001 - Jason Heyward
-    #davic003 - Chris Davis
+
     #print (mk.play_game())
     #mk.simulate_games()
 
-    #using parallel code (max 10 cores)
+    #using parallel code (max 10 cores)'''
     max_cores_to_use = 10
+    '''
     chunksize = 10000
 
     print ('Starting:\t', datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
@@ -391,3 +535,7 @@ if __name__ == '__main__':
     print ('Finishing:\t', datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
     #plt.plot(np.array(results)[:,-1])
     #plt.show()
+    '''
+    print ('Starting:\t', datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+    ER_matrix, batters_list, batters_out_prob, batters_er_on_00 = mk.generate_er()
+    print ('Finishing:\t', datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
