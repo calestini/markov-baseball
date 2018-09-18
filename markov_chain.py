@@ -3,102 +3,12 @@ import pandas as pd
 import seaborn as sns
 import itertools
 import matplotlib.pyplot as plt
-from operator import itemgetter
-import concurrent.futures
+#import concurrent.futures
+import time
+#from operator import itemgetter
 import datetime
 
-RUNS=[
-    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    [2,1,1,1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    [2,1,1,1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    [2,1,1,1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    [3,2,2,2,1,1,1,0,2,1,1,1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],
-    [3,2,2,2,1,1,1,0,2,1,1,1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],
-    [3,2,2,2,1,1,1,0,2,1,1,1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],
-    [4,3,3,3,2,2,2,1,3,2,2,2,1,1,1,0,2,1,1,1,0,0,0,0,0,1,0,0],
-    [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,2,1,1,1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,2,1,1,1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,2,1,1,1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,3,2,2,2,1,1,1,0,2,1,1,1,0,0,0,0,0,1,0,0],
-    [0,0,0,0,0,0,0,0,3,2,2,2,1,1,1,0,2,1,1,1,0,0,0,0,0,1,0,0],
-    [0,0,0,0,0,0,0,0,3,2,2,2,1,1,1,0,2,1,1,1,0,0,0,0,0,1,0,0],
-    [0,0,0,0,0,0,0,0,4,3,3,3,2,2,2,1,3,2,2,2,1,1,1,0,0,1,2,0],
-    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,1,1,1,0,0,0,0,0,1,0,0],
-    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,1,1,1,0,0,0,0,0,1,0,0],
-    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,1,1,1,0,0,0,0,0,1,0,0],
-    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,2,2,2,1,1,1,0,0,1,2,0],
-    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,2,2,2,1,1,1,0,0,1,2,0],
-    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,2,2,2,1,1,1,0,0,1,2,0],
-    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,3,3,3,2,2,2,1,0,1,2,3]
-#    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-#    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-#    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-#    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-    ]
-
-OUTS=[
-    [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,0,2,2,2,2,0,0,0,0,3,0,0,0],
-    [0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,0,2,2,2,2,0,0,0,0,3,0,0,0],
-    [0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,0,2,2,2,2,0,0,0,0,3,0,0,0],
-    [0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,0,3,3,0,0],
-    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,2,0,0,0],
-    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,2,0,0,0],
-    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,2,0,0,0],
-    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,0,2,2,0,0],
-    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,0,2,2,0,0],
-    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,0,2,2,0,0],
-    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,2,2,2,0],
-    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0],
-    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0],
-    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0],
-    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0],
-    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0],
-    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0],
-    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0],
-    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1]
-    #[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    #[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    #[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    #[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-    ]
-
-PRIOR = [
-    [0.0238,0.2554,0.0466,0.0075,0.0,0.0,0.0,0.0,0.6668,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],
-    [0.0211,0.0003,0.0124,0.0073,0.1951,0.0491,0.0328,0.0,0.0006,0.4092,0.1544,0.0028,0.0,0.0,0.0,0.0,0.1148,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],
-    [0.0171,0.0554,0.0437,0.0076,0.0993,0.0954,0.0054,0.0,0.0035,0.018,0.3803,0.2664,0.0,0.0,0.0,0.0,0.008,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],
-    [0.0178,0.173,0.047,0.0104,0.0,0.1127,0.0002,0.0,0.206,0.0061,0.0015,0.4197,0.0,0.0,0.0,0.0,0.0057,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],
-    [0.021,0.0004,0.0122,0.0074,0.0465,0.0322,0.0338,0.1603,0.0006,0.0027,0.0033,0.0016,0.3215,0.0952,0.1583,0.0,0.0003,0.0108,0.012,0.078,0.0,0.0,0.0,0.0,0.0018,0.0,0.0,0.0],
-    [0.022,0.0004,0.0121,0.0077,0.1387,0.0511,0.039,0.0801,0.001,0.182,0.0531,0.003,0.0287,0.2304,0.0417,0.0,0.086,0.0055,0.0034,0.0134,0.0,0.0,0.0,0.0,0.0005,0.0,0.0,0.0],
-    [0.0182,0.0603,0.0485,0.0096,0.0072,0.0803,0.0077,0.1515,0.0047,0.0048,0.0938,0.1358,0.0058,0.0105,0.35,0.0,0.0029,0.0003,0.0032,0.0044,0.0,0.0,0.0,0.0,0.0003,0.0,0.0,0.0],
-    [0.0236,0.0001,0.0123,0.008,0.0565,0.0357,0.0409,0.1634,0.0008,0.0036,0.0039,0.003,0.0783,0.0964,0.0464,0.3144,0.0004,0.0025,0.0029,0.0675,0.0065,0.0037,0.0283,0.0,0.001,0.0002,0.0,0.0],
-    [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0217,0.2532,0.0442,0.007,0.0,0.0,0.0,0.0,0.6739,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],
-    [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0235,0.0004,0.0147,0.0082,0.203,0.0551,0.0326,0.0,0.0008,0.4362,0.0913,0.0029,0.0,0.0,0.0,0.0,0.1312,0.0,0.0,0.0],
-    [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0193,0.0707,0.0503,0.0088,0.1471,0.0612,0.0041,0.0,0.0049,0.014,0.4407,0.1681,0.0,0.0,0.0,0.0,0.0109,0.0,0.0,0.0],
-    [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0175,0.1824,0.0475,0.0094,0.0,0.1378,0.0005,0.0,0.2136,0.0267,0.0074,0.3434,0.0,0.0,0.0,0.0,0.0138,0.0,0.0,0.0],
-    [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0232,0.0004,0.0154,0.0088,0.0603,0.0396,0.0354,0.1416,0.0008,0.0047,0.0048,0.002,0.3579,0.0968,0.0734,0.0,0.1344,0.0002,0.0,0.0],
-    [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0208,0.0005,0.0133,0.0086,0.1405,0.0498,0.0356,0.0812,0.0008,0.1847,0.0687,0.0041,0.0248,0.2085,0.0228,0.0,0.1306,0.0048,0.0,0.0],
-    [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0131,0.0619,0.0434,0.0079,0.0056,0.0637,0.0063,0.273,0.005,0.0056,0.0882,0.1099,0.0085,0.0248,0.2674,0.0,0.0132,0.0025,0.0,0.0],
-    [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0222,0.0002,0.0126,0.0095,0.0541,0.0362,0.0393,0.1502,0.0009,0.0053,0.0053,0.0027,0.0911,0.0921,0.0489,0.2877,0.1368,0.0048,0.0002,0.0],
-    [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0223,0.2574,0.0438,0.0063,0.0,0.0,0.0,0.0,0.6703,0.0,0.0,0.0],
-    [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0239,0.001,0.0209,0.009,0.1944,0.0529,0.0216,0.0,0.6753,0.0009,0.0,0.0],
-    [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0183,0.0923,0.0534,0.0079,0.1711,0.0305,0.0005,0.0,0.6208,0.0051,0.0,0.0],
-    [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0181,0.1503,0.0411,0.0073,0.0,0.1556,0.0,0.0,0.6256,0.002,0.0,0.0],
-    [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0209,0.001,0.0226,0.0098,0.0609,0.0445,0.0254,0.1204,0.6863,0.0073,0.0009,0.0],
-    [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0206,0.001,0.0205,0.01,0.1133,0.0497,0.0233,0.0931,0.6614,0.006,0.0011,0.0],
-    [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0159,0.0824,0.0472,0.0072,0.0008,0.0311,0.0007,0.2222,0.5821,0.0054,0.0051,0.0],
-    [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0214,0.0011,0.0218,0.0106,0.0544,0.046,0.0274,0.1205,0.683,0.0054,0.0073,0.001]
-]
-
-#initializematrices:
-###Initializematrices
-#T=npzeros([28,28])
+from helper import PRIOR, OUTS, RUNS, timeit
 
 class markov():
     """
@@ -283,7 +193,7 @@ class markov():
             tot_runs.append(runs)
         return np.mean(tot_runs)
 
-    def simulate_games(self, batter_list=None, N = 10000, innings = 9):
+    def simulate_games(self, batter_list=['goldp001','donaj001','cruzn002','vottj001','cabrm001','mccua001','machm001','heywj001','davic003'], N = 10, innings = 9):
         """it runs random selection of states for innings
         """
         if batter_list is None:
@@ -317,86 +227,45 @@ class markov():
         #plt.title(np.mean(tot_runs))
         #plt.show()
 
-    def batter_permutations(self, batter_list = ['goldp001','donaj001','cruzn002','vottj001','cabrm001','mccua001','machm001','heywj001','davic003']):
-        """create all possible permutations of batters
-        """
-        permutations = itertools.permutations(batter_list)
-        self.permutations = [i for i in permutations]
-
-        return [i for i in range(len(self.permutations))]
-
-
-    def optimize_batting(self, permutations):
-
-        results = []
-        for loop, batter_list in enumerate(permutations):
-            #print (batter_list)
-            #print (loop)
-            avg_runs = self.simulate_games(batter_list=batter_list, N=2)
-            results.append([batter_list, avg_runs])
-
-        #results = sorted(results, key=itemgetter(-1), reverse=True)
-        #plt.plot(np.array(results)[:,-1])
-        #plt.show()
-        #print (results)
-        return results
-
-    def optimize_batting2(self, index):
-
-        batter_list = self.permutations[index]
-        avg_runs = self.simulate_games(batter_list=batter_list, N=10)
-        results = [batter_list, avg_runs]
-        #print (index) if index % 10000 == 0 else None
-        #results = sorted(results, key=itemgetter(-1), reverse=True)
-        #plt.plot(np.array(results)[:,-1])
-        #plt.show()
-        #print (results)
-        return results
-
-    def expected_run(self, Tp):
-        Er = np.sum(self.runs[:24,:24]*Tp , axis=1).reshape([24,1])
-        return Er
-
-    def inning(self, ER_matrix, batting_line, transitions, runs, batters_list):
-        '''#need to create a function to estimate probabilty of inning ending with batter 3,4,5...
-        ER_matrix has the Expected run matrix (24X1) for each batting line. Based on who starts, all we need is element 0 for that inning.
-        Therefore we need to know the probability of player x starting the inning in that base line and multiply by the ER where he starts.
-        in other words, expected run on inning2 is the sum of element-wise multiplication of ER[0] for each batter * P(batter), where P is
-        the probability that player will start the next inning (a function of the current inning line)
-
-        batting_line: list of 9 elements (1D)
-        '''
-        #expected run on second inning
-
-        #initialize variables
-        batting_line = batting_line + batting_line + batting_line #27 players total to run in one inning before 3rd out
-        out_prob = np.zeros(shape=[len(batting_line),1])
-        ER_inning = np.zeros(shape=[len(batting_line),1])
-        runs_2nd = 0
-        new_batting_line = batting_line
-        current_U = transitions[batting_line[0]][0,:]
+    # def batter_permutations(self, batter_list = ['goldp001','donaj001','cruzn002','vottj001','cabrm001','mccua001','machm001','heywj001','davic003']):
+    #     """create all possible permutations of batters
+    #     """
+    #     permutations = itertools.permutations(batter_list)
+    #     self.permutations = [i for i in permutations]
+    #
+    #     return [i for i in range(len(self.permutations))]
 
 
-        prob = 1-np.sum(transitions[batting_line[0]][0,:])
-        out_prob[0] = prob
+    # def optimize_batting(self, permutations):
+    #
+    #     results = []
+    #     for loop, batter_list in enumerate(permutations):
+    #         #print (batter_list)
+    #         #print (loop)
+    #         avg_runs = self.simulate_games(batter_list=batter_list, N=2)
+    #         results.append([batter_list, avg_runs])
+    #
+    #     #results = sorted(results, key=itemgetter(-1), reverse=True)
+    #     #plt.plot(np.array(results)[:,-1])
+    #     #plt.show()
+    #     #print (results)
+    #     return results
 
-        batter_ix = next(i for i,v in enumerate(batters_list) if list(new_batting_line[0:9]) == v)
-        ER_inning[0] = ER_matrix[batter_ix][0]
+    # def optimize_batting2(self, index):
+    #
+    #     batter_list = self.permutations[index]
+    #     avg_runs = self.simulate_games(batter_list=batter_list, N=10)
+    #     results = [batter_list, avg_runs]
+    #     #print (index) if index % 10000 == 0 else None
+    #     #results = sorted(results, key=itemgetter(-1), reverse=True)
+    #     #plt.plot(np.array(results)[:,-1])
+    #     #plt.show()
+    #     #print (results)
+    #     return results
 
-        for loop, batter in enumerate(batting_line):
-            if loop>0:
-                prob = 1-np.sum(np.dot(current_U, transitions[batter]))
-                current_U = np.dot(current_U, transitions[batter])
-                out_prob[loop] = prob - np.sum(out_prob[2:])
-                new_batting_line = self.rotate_batters(new_batting_line)
-
-            batter_ix = next(i for i,v in enumerate(batters_list) if list(new_batting_line[0:9]) == v)
-            ER_inning[loop] = ER_matrix[batter_ix][0]
-
-        print ('1st inning', ER_inning[0][0])
-        print ('2nd inning', np.sum(out_prob*ER_inning))
-        #print (out_prob, ER_inning)
-
+    #def expected_run(self, Tp):
+    #    Er = np.sum(self.runs[:24,:24]*Tp , axis=1).reshape([24,1])
+    #    return Er
 
     def rotate_batters(self, current_batter_list):
         """rotate batters once, to the left"""
@@ -417,18 +286,38 @@ class markov():
 
         return transitions, runs
 
+    #have to create an ordered permutation to reduce lookup time in optimization
+    @timeit
+    def batter_permutation(self, batter_list):
+        """it creates 3X times the number of batters, to account for potential
+        long innings, where a full rotation happens (~0.01% of cases)
+        """
+        n = len(batter_list)
+        #first get all possibe sequences permutaitons of (n-1)
+        combinations = itertools.permutations(batter_list[1:])
+        ordered_batter_list = []
+        for combination in combinations:
+            batter_seq = [batter_list[0]] + list(combination)
+            ordered_batter_list.append(batter_seq+batter_seq+batter_seq)
+            for i in range(n-1):
+                batter_seq = self.rotate_batters(batter_seq)
+                ordered_batter_list.append(batter_seq+batter_seq+batter_seq)
 
-    def Er_out_Matrix(self, batter_list, runs, transitions):
-        #takes about two minutes to run, but it only needs to run once
-        permutations = itertools.permutations(batter_list)
-        permutations_list = [i+i+i for i in permutations] #do i need this?
+        return ordered_batter_list
+
+    #@timeit
+    def Er_out_Matrix(self, permutations_list, runs, transitions, dim):
+        """Returns earned run and out matrix for each batter lineup
+        It is the backbone for the optimal batter calculation
+        """
+
 
         ER_matrix = np.zeros([len(permutations_list),24])
         Outs_matrix = np.zeros([len(permutations_list),27]) #Out prob, starting from that batter
 
-        batters_list = []
+        #batters_list = []
         for loop, batters in enumerate(permutations_list):
-            batters_list.append(list(batters[:9]))
+            #batters_list.append(list(batters[:9]))
 
             #T_list = np.zeros([len(batters),24,24])
             Er_list = np.zeros([len(batters),24,1])
@@ -455,95 +344,106 @@ class markov():
 
         Outs_matrix[:,:2] = 0.
 
-        return ER_matrix, Outs_matrix, batters_list
+        return ER_matrix, Outs_matrix
 
 
-    def expected_run2(self, ER_matrix, Outs_matrix, batting_line, batters_list, dim):
+    #@timeit
+    def expected_run(self,batters_out_prob, batters_er_on_00, dim):
+        er_total = 0
+        new = np.zeros((dim,dim))
+        new[:,1:] = batters_out_prob[:,:-1]
+        new[:,0] = batters_out_prob[:,-1]
+
+        er1 = batters_er_on_00[0,0]
+
+        start_second = new[0,:]
+        first_ER = batters_er_on_00[:,0]
+        er2 = np.dot(start_second, first_ER)
+
+        start_third = start_second.reshape(dim,1) * new
+        er3 = np.sum(start_third * batters_er_on_00)
+
+        er_total = er1 + er2 + er3
+
+        start_previous = start_third
+        for last_innings in [4,5,6,7,8,9]:
+            start_next = np.zeros((dim,1))
+
+            for i in range(dim):
+
+                if i == 8: #diaognal 0 = last player = player 8
+                    x = 0
+                else:
+                    x = i + 1
+
+                start_next[i,:] = np.trace(start_previous[:,::-1], -x) + np.trace(start_previous[:,::-1], dim - x) #adding up the diagonals
+
+            start_next = start_next.reshape(dim,1) * new
+            start_previous = start_next.copy()
+            er_total += np.sum(start_next * batters_er_on_00)
+
+        return er_total
+
+
+    #@timeit
+    def out_er(self, ER_matrix, Outs_matrix, batters_list, dim, index_st):
         batters_out_prob = np.zeros([dim,dim])
         batters_er_on_00 = np.zeros([dim,1])
-        #batters_out_prob = np.zeros([9,9])
-        #batters_er_on_00 = np.zeros([9,9])
 
-        new_batting_line = batting_line
-        for rotation in range(dim):
-            batters_ix = next(i for i,v in enumerate(batters_list) if list(new_batting_line[0:9]) == v)
-            batters_out_prob[rotation] = Outs_matrix[batters_ix][0:dim]
-            batters_er_on_00[rotation][0] = ER_matrix[batters_ix][0]
-            new_batting_line = self.rotate_batters(new_batting_line)
+        index_end = index_st + dim
+        batters_out_prob = Outs_matrix[index_st:index_end,0:dim]
+        batters_er_on_00[:,0] = ER_matrix[index_st:index_end,0]
 
         batters_out_prob[:,:2] = 0.
-
-        #x = list(batters_er_on_00[:,0])
-        #for row in range(len(x)):
-        #    for column in range(len(x)):
-        #        batters_er_on_00[len(x)-1 - row][column] = x[column-row]
 
         return batters_out_prob, batters_er_on_00
 
 
-    def generate_er(self, batter_list=['goldp001','donaj001','cruzn002','vottj001','cabrm001','mccua001','machm001','heywj001','davic003']):
-
+    @timeit
+    def optimize_line(self, batter_list=['goldp001','donaj001','cruzn002','vottj001','cabrm001','mccua001','machm001','heywj001','davic003']):
         dim = 9
 
         transitions, runs = self.line_runs_transitions(batter_list)
-        ER_matrix, Outs_matrix, batters_list = self.Er_out_Matrix( batter_list, runs=runs, transitions=transitions)
+        permutations_list = self.batter_permutation(batter_list)
 
-        er_total = np.zeros((len(batters_list), 1))
-        print ('\tStarted rotation:\t', datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
-        ########################################################################
-        for loop, batting_line in enumerate(batters_list):
-            #batting_line = batters_list[0]
-            print (loop) if loop % 10 == 0 else None
-            batters_out_prob, batters_er_on_00 = self.expected_run2(ER_matrix, Outs_matrix, batting_line+batting_line+batting_line, batters_list, dim=dim)
+        ER_matrix, Outs_matrix = self.Er_out_Matrix(permutations_list=permutations_list, runs=runs, transitions=transitions,dim=dim)
 
-            #rotate batter prob --> if ends on third out has to start on next batter
-            new = np.zeros((dim,dim))
-            new[:,1:] = batters_out_prob[:,:-1]
-            new[:,0] = batters_out_prob[:,-1]
+        er_total = np.zeros((len(permutations_list), 1))
 
-            er1 = batters_er_on_00[0,0]
+        for loop in range(0,len(permutations_list),dim):
 
-            start_second = new[0,:]
-            first_ER = batters_er_on_00[:,0]
-            er2 = np.dot(start_second, first_ER)
+            for i in range(dim):
+                batters_out_prob = np.zeros([dim,dim])
+                batters_er_on_00 = np.zeros([dim,1])
 
-            start_third = start_second.reshape(dim,1) * new
-            er3 = np.sum(start_third * batters_er_on_00)
+                if i == 0:
+                    index_st = loop
+                    index_end = loop + dim
+                    batters_out_prob = Outs_matrix[index_st:index_end,0:dim]
+                    batters_er_on_00[:,0] = ER_matrix[index_st:index_end,0]
+                    batters_out_prob[:,:2] = 0.
 
-            er_total[loop,0] = er1 + er2 + er3
+                    p_batters_out_prob = batters_out_prob
+                    p_batters_er_on_00 = batters_er_on_00
+                else: #rotate matrices for different starting batters
+                    batters_out_prob[:,:-i] = p_batters_out_prob[:,i:]
+                    batters_out_prob[:,-i:] = p_batters_out_prob[:,:i]
 
-            start_previous = start_third
-            for last_innings in [4,5,6,7,8,9]:
-                start_next = np.zeros((dim,1))
-                #print (np.sum(start_previous), start_previous.shape)
+                    batters_er_on_00[:-i,0] = p_batters_er_on_00[i:,0]
+                    batters_er_on_00[-i:,0] = p_batters_er_on_00[:i:,0]
 
-                for i in range(dim):
-                    #diaognal 0 = last player = player 8
-                    if i == 8:
-                        x = 0
-                    else:
-                        x = i + 1
-                    start_next[i,:] = np.trace(start_previous[:,::-1], -x) + np.trace(start_previous[:,::-1], dim - x) #adding up the diagonals
+                er_total[loop+i,0] = self.expected_run(batters_out_prob=batters_out_prob, batters_er_on_00=batters_er_on_00, dim=dim)
 
+        best_lines = np.array(permutations_list).reshape([len(permutations_list),27])[:,:9]
 
-                #for row in range(start_previous.shape[0]):
-                #    for column in range(start_previous.shape[1]):
-                #        start_next[column-row,:] += start_previous[len(start_previous)-1 - row][column]
-
-                start_next = start_next.reshape(dim,1) * new
-                start_previous = start_next.copy()
-                er_total[loop,0] += np.sum(start_next * batters_er_on_00)
-
-            if loop  == 0:
-                return er_total, batters_out_prob, batters_er_on_00
-
-        return er_total
+        return er_total, best_lines
 
 
 if __name__ == '__main__':
     mk = markov()
 
     #using parallel code (max 10 cores)'''
+    print ('Starting:\t', datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
     max_cores_to_use = 10
     '''
     chunksize = 10000
@@ -562,11 +462,11 @@ if __name__ == '__main__':
         results = zip(executor.map(mk.optimize_batting2, permutations_indices))
 
     #print (results)
-    print ('Finishing:\t', datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+
     #plt.plot(np.array(results)[:,-1])
     #plt.show()
     '''
-    print ('Starting:\t', datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
-    #ER_matrix, batters_list, Outs_matrix, batters_out_prob, batters_er_on_00 =
-    er_total, batters_out_prob, batters_er_on_00 = mk.generate_er()
+
+    er_total, bline = mk.optimize_line()
+    #er_games = mk.simulate_games()
     print ('Finishing:\t', datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
