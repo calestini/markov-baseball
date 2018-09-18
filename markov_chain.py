@@ -523,7 +523,7 @@ class markov():
                         x = 0
                     else:
                         x = i + 1
-                    start_next[i,:] = np.trace(start_previous[:,::-1], x) + np.trace(start_previous[:,::-1], dim - x) #adding up the diagonals
+                    start_next[i,:] = np.trace(start_previous[:,::-1], -x) + np.trace(start_previous[:,::-1], dim - x) #adding up the diagonals
 
 
                 #for row in range(start_previous.shape[0]):
