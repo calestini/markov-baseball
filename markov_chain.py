@@ -466,7 +466,11 @@ if __name__ == '__main__':
     #plt.plot(np.array(results)[:,-1])
     #plt.show()
     '''
+    #Altuve, Blackmon, J.D. Martinez, Stanton, Inciarte, Jose Ramirez, Votto, Pujols, Trout
+    best_2017 = ['altuj001','martj006','blacc001','stanm004','incie001','ramij003','vottj001','pujoa001','troum001']
 
-    er_total, bline = mk.optimize_line()
+    red_socks = ['bettm001','benia002','martj006','bogax001','holtb002','vazqc001','nunee002','leons001','bradj001']
+    er_total, bline = mk.optimize_line(batter_list = best_2017)
     #er_games = mk.simulate_games()
+
     print ('Finishing:\t', datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
