@@ -103,6 +103,7 @@ class markov():
         #print (Er)
         return Er
 
+
     def eo(self, Tp=None):
         """Function to calculate expected out
         """
