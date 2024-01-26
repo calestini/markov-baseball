@@ -19,7 +19,7 @@ With this, we can know the expected run given a sequence of batters, for the fir
 There are 28 states in baseball innings:
 
 |Runners|None|1st|2nd|3rd|1&2|1&3|2&3|1,2,3|
-|:-:|:-:|:-:||:-:||:-:||:-:||:-:||:-:||:-:||:-:|
+|-:|-:|-:|-:|-:|-:|-:|-:|-:|
 |Outs|||||||||
 |0|#1|#2|#3|#4|#5|#6|#7|#8|
 |1|#9|#10|#11|#12|#13|#14|#15|#16|
